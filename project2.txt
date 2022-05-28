@@ -1,0 +1,1367 @@
+/// proudect
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.*;
+import com.example.exesrsies.servises.Productservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/product")
+@RequiredArgsConstructor
+public class Produtcontrooller {
+    private final Productservises productservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<Product>> getProdect() {
+
+        return ResponseEntity.status(200).body(productservises.getProduct());
+
+    }
+
+    //post
+    @PostMapping
+    public ResponseEntity<RequestApi> addProudect(@RequestBody @Valid Product product, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = productservises.addProduct(product);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a Proudct", 500));
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New Proudct added", 200));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity update(@PathVariable Integer id, @RequestBody Product product ,Errors errors) {
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = productservises.updateProduct(id,product);
+        if (!ischeck) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+        }
+        return ResponseEntity.status(201).body(new RequestApi("update Proudect", 200));
+
+    }
+    //delet
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RequestApi> delete(@PathVariable Integer id) {
+  boolean ischeck=productservises.dProduct(id);
+   if(!ischeck) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+}
+        return ResponseEntity.status(201).body(new RequestApi("delet Proudect", 200));
+
+}
+@PostMapping("/buyProudectwithoutCart/{userid}/{poudectid}/{merchid}")
+    public ResponseEntity<RequestApi> buyProudectwithoutCart(@PathVariable String userid,@PathVariable String poudectid,@PathVariable String merchid){
+        Integer buyStatus=productservises.bayProudectWithoutCart(userid,poudectid,merchid);
+
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("poudectid is not valid",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("userid is not valid",400));
+            case 1:
+                return ResponseEntity.status(400).body(new RequestApi("merchid is not valid",400));
+            case 2:
+                return ResponseEntity.status(200).body(new RequestApi("balence less than price!",400));
+            case 3:
+                return ResponseEntity.status(200).body(new RequestApi("proudect purchased !",200));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+    @PostMapping("/buyProudecwihthCart")
+    public ResponseEntity<RequestApi> buyProudecwihthCart(@ RequestBody Cart cart){
+        Integer buyStatus=productservises.bayProudectwithCart(cart);
+
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("merchid is not valid",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("balence less than all Proudect",400));
+            case 1:
+                return ResponseEntity.status(400).body(new RequestApi("add proudect with cart",200));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+    @PutMapping("/getAllCommint/{proudctid}")
+    public ResponseEntity<RequestApi> getAllCommint(@PathVariable String proudctid){
+        Integer buyStatus=productservises.getAllComment(proudctid);
+
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("proudctid is not valid",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("get all commint",200));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+
+    @PutMapping("/getRate")
+    public ResponseEntity<RequestApi> getRate(){
+        Integer buyStatus=productservises.gettAllRate();
+
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("rate not equal 5",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("rate equal 5",200));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+
+    @PutMapping("/getPurchaseHistory")
+    public ResponseEntity<RequestApi> getPurchaseHistory(){
+        Integer buyStatus=productservises.getAllPurchaseHistory();
+
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("PurchaseHistory is null",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("get all PurchaseHistory",200));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+@PostMapping("/postcommit/{poudectid}/{userid}")
+    public ResponseEntity<RequestApi>postcommit(@PathVariable String poudectid, @PathVariable String userid, @RequestBody Comment comment){
+
+        Integer buyStatus=productservises.postCommit(poudectid,userid,comment);
+        switch (buyStatus){
+            case -1:
+                return ResponseEntity.status(400).body(new RequestApi("poudectid is not valid",400));
+            case 0:
+                return ResponseEntity.status(400).body(new RequestApi("userid is not valid",400));
+            case 1:
+                return ResponseEntity.status(400).body(new RequestApi("not bought the product ",400));
+            case 2:
+                return ResponseEntity.status(200).body(new RequestApi("bought the product !",400));
+            default:
+                return ResponseEntity.status(500).body(new RequestApi("Server error",500));
+        }
+
+    }
+
+
+
+}//end class
+
+
+
+
+//////
+package com.example.exesrsies.model;
+
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
+
+@Data
+public class Product {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="name: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String name;
+    @NotNull(message = "price:must not be empty ")@Positive
+    private double price;
+    @NotEmpty(message ="categoryID: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+
+    private String categoryID;
+    private ArrayList Comment;
+
+    public Product(String id, String name, double price, String categoryID) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.categoryID = categoryID;
+        Comment = new ArrayList<>();
+    }
+}
+
+
+
+
+
+
+///////
+
+
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Productservises {
+    //private final Productservises productservises;
+    private final Merchantservises merchantservises;
+    private final Userservises userservises;
+    private final PurchaseHistoryservises purchaseHistoryservises;
+
+
+    private ArrayList<Product> products = new ArrayList();
+
+
+    //get
+    public ArrayList<Product> getProduct() {
+        return products;
+    }
+
+    //add
+    public boolean addProduct(Product product) {
+
+        return products.add(product);
+    }
+
+    //update
+    public boolean updateProduct(int index, Product product) {
+        products.set(index, product);
+        return true;
+    }
+
+    //deleat
+    public boolean dProduct(int index) {
+        products.remove(index);
+        return true;
+
+    }
+    public Product getProudect(String proudectid){
+        for (Product product:products) {
+            if(product.getId().equals(proudectid))
+                return product;
+        }
+        return null;
+    }
+
+
+    public Integer bayProudectWithoutCart(String proudctid,String userid,String merchantid){
+        Product product=getProudect(proudctid);
+        User user=userservises.getUser(userid);
+        Merchant merchant1=merchantservises.getMerchant(merchantid);
+MerchantStock merchantStock=null;
+PurchaseHistory purchaseHistory=null;
+        if(product==null){
+            return -1;
+        }
+        if(user==null){
+            return 0;
+        }
+        if(merchant1==null){
+            return 1;
+        }
+
+        if(user.getBalance()<product.getPrice()){
+            return 2;
+        }
+   user.setBalance(user.getBalance()-product.getPrice());
+        Integer lastStock= merchantStock.getStock();
+        merchantStock.setStock(lastStock-1);
+        purchaseHistoryservises.addPurchaseHistory(purchaseHistory);
+      return 3;
+    }
+
+    public Integer bayProudectwithCart(Cart cart) {
+        String merchantid=null;
+        User user=null;
+        Product product=null;
+        Merchant merchant=merchantservises.getMerchant(merchantid);
+       MerchantStock merchantStock=null;
+        PurchaseHistory purchaseHistory=null;
+        if(merchant==null){
+            return -1;
+        }
+        if(checkBalence()==null){
+            return 0;
+        }
+
+       checkBalence();
+        user.setBalance(user.getBalance()-product.getPrice());
+        Integer lastStock= merchantStock.getStock();
+        merchantStock.setStock(lastStock-1);
+        purchaseHistoryservises.addPurchaseHistory(purchaseHistory);
+        return 1;
+    }//end bayProudectwithCart
+
+
+    public ArrayList<Product> checkBalence(){
+        ArrayList ischeck=new ArrayList<>();
+        Cart cart=null;
+        Product price=null;
+        User user=null;
+        for(int i=0;i<cart.getProducts().size();i++){
+            if(user.getBalance()>price.getPrice())
+                ischeck.add(price);
+        }
+        return null;
+    }
+
+    public Integer postCommit(String userid , String productid , Comment comment){
+        Product product=getProudect(productid);
+        User user=userservises.getUser(userid);
+        MerchantStock merchantStock=null;
+        if(product==null){
+            return -1;
+        }
+        if(user==null){
+            return 0;
+        }
+        if(merchantStock.getStock()==getOldStock()){
+            return 1;
+        }
+       product.getComment().add(comment);
+        return 2;
+    }/////////end post commint
+
+public Integer getAllComment(String productid){
+    Product product=getProudect(productid);
+    if(product==null){
+        return -1;
+    }
+    product.getComment();
+    return 0;
+}
+
+public Integer gettAllRate(){
+    Comment comment =null;
+    if(comment.getRate()!=5) {
+        return -1;
+    }
+    else
+        return 0;
+
+
+    }
+
+    public Integer getAllPurchaseHistory(){
+    if(purchaseHistoryservises.getPurchaseHistories()==null){
+        return -1;}
+    else
+    purchaseHistoryservises.getPurchaseHistories();
+    return 0;
+    }
+    public Integer getOldStock(){
+        MerchantStock merchantStock=null;
+        Integer lastStock= merchantStock.getStock();
+        merchantStock.setStock(lastStock-1);
+        return lastStock;
+    }
+}
+
+//end class
+
+
+
+
+
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.Category;
+import com.example.exesrsies.model.Product;
+import com.example.exesrsies.model.RequestApi;
+import com.example.exesrsies.servises.Categoryservises;
+import com.example.exesrsies.servises.Productservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/category")
+@RequiredArgsConstructor
+public class Categorycontrooller {
+    private final Categoryservises categoryservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<Category>> getCategory() {
+
+        return ResponseEntity.status(200).body(categoryservises.getCategory());
+
+    }
+
+    //post
+    @PostMapping
+    public ResponseEntity<RequestApi> addCategory(@RequestBody @Valid Category category, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = categoryservises.addCategory(category);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a Category", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New Category added", 200));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity update(@PathVariable int id, @RequestBody Category category ,Errors errors) {
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = categoryservises.updateCategory(id,category);
+        if (!ischeck) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+        }
+        return ResponseEntity.status(201).body(new RequestApi("update Category", 200));
+
+    }
+    //delet
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RequestApi> delete(@PathVariable Integer id) {
+  boolean ischeck=categoryservises.dCategory(id);
+   if(!ischeck) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+}
+        return ResponseEntity.status(201).body(new RequestApi("delet Proudect", 200));
+
+}
+
+}
+
+
+/////
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
+
+@Data @AllArgsConstructor
+public class Category {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="name: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String name;
+
+
+
+}
+
+
+
+
+
+////
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Category;
+import com.example.exesrsies.model.Product;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Categoryservises {
+    private ArrayList<Category> categories = new ArrayList();
+
+
+    //get
+    public ArrayList<Category> getCategory() {
+
+        return categories;
+    }
+
+    //add
+    public boolean addCategory(Category category) {
+
+        return categories.add(category);
+    }
+
+    //update
+    public boolean updateCategory(int index, Category category) {
+        categories.set(index, category);
+        return true;
+    }
+
+    //deleat
+    public boolean dCategory(int index) {
+        categories.remove(index);
+        return true;
+
+    }
+}//end class
+
+
+//////
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Category;
+import com.example.exesrsies.model.Merchant;
+import com.example.exesrsies.model.RequestApi;
+import com.example.exesrsies.servises.Categoryservises;
+import com.example.exesrsies.servises.Merchantservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/merchant")
+@RequiredArgsConstructor
+public class Merchantcontrooller {
+    private final Merchantservises merchantservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<Merchant>> getMerchant() {
+
+        return ResponseEntity.status(200).body(merchantservises.getMerchant());
+
+    }
+
+    //post
+    @PostMapping
+    public ResponseEntity<RequestApi> addMerchant(@RequestBody @Valid Merchant merchant, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = merchantservises.addMerchant(merchant);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a Merchant", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New Merchant added", 200));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity update(@PathVariable int id, @RequestBody Merchant merchant ,Errors errors) {
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = merchantservises.updateMerchant(id,merchant);
+        if (!ischeck) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+        }
+        return ResponseEntity.status(201).body(new RequestApi("update Merchant", 200));
+
+    }
+    //delet
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RequestApi> delete(@PathVariable Integer id) {
+  boolean ischeck=merchantservises.dMerchant(id);
+   if(!ischeck) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+}
+        return ResponseEntity.status(201).body(new RequestApi("delete Merchant", 200));
+
+}
+    @PutMapping("/add/{userid}/{prodectid}")
+    public ResponseEntity<RequestApi> addProdectToMerchant(@PathVariable String userid, @PathVariable String prodectid, @RequestBody @Valid Cart cart, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = merchantservises.addProudectToMerchant(userid,prodectid);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding Merchant", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New Merchant added", 200));
+    }
+
+}
+
+
+/////
+
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
+
+@Data @AllArgsConstructor
+public class Merchant {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="name: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String name;
+
+
+
+}
+/////
+
+
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Merchantservises {
+    private ArrayList<Merchant> merchants = new ArrayList();
+
+    //private final Productservises productservises;
+    //private final Cartservises cartservises;
+    private final Userservises userservises;
+    //get
+    public ArrayList<Merchant> getMerchant() {
+
+        return merchants;
+    }
+
+    //add
+    public boolean addMerchant(Merchant merchant) {
+
+        return merchants.add(merchant);
+    }
+
+    //update
+    public boolean updateMerchant(int index, Merchant merchant) {
+       merchants.set(index, merchant);
+        return true;
+    }
+
+    //deleat
+    public boolean dMerchant(int index) {
+        merchants.remove(index);
+        return true;
+
+    }
+
+    public Merchant getMerchant(String merchantid){
+        for (Merchant merchant:merchants) {
+            if(merchant.getId().equals(merchantid))
+                return merchant;
+        }
+        return null;
+    }
+    public boolean addProudectToMerchant(String userid ,String merchantid){
+        // products.add(productservises.getProudect(productid));
+        //products.add(userservises.getUser(userid))
+        Merchant merchant=getMerchant(merchantid);
+        User user=userservises.getUser(userid);
+        Cart cart=null;
+        if(merchant==null&&user==null){
+            return false;
+        }
+        merchants.add(merchant);
+        return true;
+    }
+
+}//end class
+
+
+/////
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.MerchantStock;
+import com.example.exesrsies.model.Product;
+import com.example.exesrsies.model.RequestApi;
+import com.example.exesrsies.servises.MerchantStocksservises;
+import com.example.exesrsies.servises.Productservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/mrchantstock")
+@RequiredArgsConstructor
+public class MerchantStockcontrooller {
+    private final MerchantStocksservises merchantStocksservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<MerchantStock>> getMerchantStock() {
+
+        return ResponseEntity.status(200).body(merchantStocksservises.getMerchantStock());
+
+    }
+
+    //post
+    @PostMapping
+    public ResponseEntity<RequestApi> addMerchantStock(@RequestBody @Valid MerchantStock merchantStock, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = merchantStocksservises.addMerchantStock(merchantStock);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a MerchantStock", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New MerchantStock added", 200));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity update(@PathVariable int id, @RequestBody MerchantStock merchantStock ,Errors errors) {
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = merchantStocksservises.updateMerchantStock(id,merchantStock);
+        if (!ischeck) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+        }
+        return ResponseEntity.status(201).body(new RequestApi("update MerchantStock", 200));
+
+    }
+    //delet
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RequestApi> delete(@PathVariable Integer id) {
+  boolean ischeck=merchantStocksservises.dMerchantStock(id);
+   if(!ischeck) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+}
+        return ResponseEntity.status(201).body(new RequestApi("delete MerchantStock", 200));
+
+}
+
+}
+
+
+//////
+
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.Max;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+@Data @AllArgsConstructor
+public class MerchantStock {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="productid: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String productid;
+    @NotEmpty(message ="merchantid: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String merchantid;
+    @NotNull(message = "stock: must not be empty")@Max(value = 10,message ="have to be more than 10 at start" )
+    private int stock;
+
+
+}
+
+
+
+///////
+
+
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Category;
+import com.example.exesrsies.model.MerchantStock;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class MerchantStocksservises {
+    private ArrayList<MerchantStock> merchantStocks = new ArrayList();
+
+
+    //get
+    public ArrayList<MerchantStock> getMerchantStock() {
+
+        return merchantStocks;
+    }
+
+    //add
+    public boolean addMerchantStock(MerchantStock merchantStock) {
+
+        return merchantStocks.add(merchantStock);
+    }
+
+    //update
+    public boolean updateMerchantStock(int index, MerchantStock merchantStock) {
+        merchantStocks.set(index,merchantStock);
+        return true;
+    }
+
+    //deleat
+    public boolean dMerchantStock(int index) {
+       merchantStocks.remove(index);
+        return true;
+
+    }
+}//end class
+
+
+///////
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.*;
+import com.example.exesrsies.servises.Cartservises;
+import com.example.exesrsies.servises.Userservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/cart")
+@RequiredArgsConstructor
+public class Cartcontrooller {
+    private final Cartservises cartservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<Cart>> getCart() {
+
+        return ResponseEntity.status(200).body(cartservises.getCart());
+
+    }
+
+    @PostMapping
+    public ResponseEntity<RequestApi> addCart(@RequestBody @Valid Cart cart, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = cartservises.addCart(cart);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a Cart", 500));
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New Cart added", 200));
+    }
+
+   @PostMapping("/add/{userid}/{prodectid}")
+    public ResponseEntity<RequestApi> addProdectToCart(@PathVariable String userid,@PathVariable String prodectid,@RequestBody @Valid Cart cart, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = cartservises.addProudectToCart(userid,prodectid);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding proudct", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New proudct added", 200));
+    }
+
+  @DeleteMapping("/remove/{userid}/{prodectid}")
+    public ResponseEntity<RequestApi> removeProdect(@PathVariable String userid,@PathVariable String prodectid,@RequestBody @Valid Cart cart, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = cartservises.removeProudectFromCart(userid,prodectid);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error removing proudct", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("removed", 200));
+    }
+}
+
+
+/////////
+
+
+package com.example.exesrsies.model;
+
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
+
+@Data
+public class Cart {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="userid: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String userid;
+    ArrayList <Product>products;
+
+    public Cart(String id, String userid) {
+        this.id = id;
+        this.userid = userid;
+        this.products = new ArrayList<>();
+    }
+}
+
+
+
+
+
+/////////
+
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Product;
+import com.example.exesrsies.model.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Cartservises {
+    private final Productservises productservises;
+   // private final Cartservises cartservises;
+    private final Userservises userservises;
+    private ArrayList<Cart> carts = new ArrayList();
+
+
+    //get
+    public ArrayList<Cart> getCart() {
+
+        return carts;
+    }
+//addproudect
+
+
+
+    public boolean addCart(Cart cart){
+     return carts.add(cart) ;
+    }
+    public boolean addProudectToCart(String userid ,String productid){
+       // products.add(productservises.getProudect(productid));
+        //products.add(userservises.getUser(userid))
+        Product product=productservises.getProudect(productid);
+        User user=userservises.getUser(userid);
+        Cart cart=null;
+        if(product==null&&user==null){
+            return false;
+        }
+        cart.getProducts().add(product);
+        return true;
+    }
+    // remove prodect
+    public boolean removeProudectFromCart(String userid ,String productid){
+        // products.add(productservises.getProudect(productid));
+        //products.add(userservises.getUser(userid))
+        Product product=productservises.getProudect(productid);
+        User user=userservises.getUser(userid);
+        Cart cart=null;
+        if(product==null&&user==null){
+            return false;
+        }
+        cart.getProducts().clear();
+
+        return true;
+    }
+          }//end class
+
+
+//////
+
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.Product;
+import com.example.exesrsies.model.RequestApi;
+import com.example.exesrsies.model.User;
+import com.example.exesrsies.servises.Productservises;
+import com.example.exesrsies.servises.Userservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/user")
+@RequiredArgsConstructor
+public class Usercontrooller {
+    private final Userservises userservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<User>> getUser() {
+
+        return ResponseEntity.status(200).body(userservises.getUser());
+
+    }
+
+    //post
+    @PostMapping
+    public ResponseEntity<RequestApi> addUser(@RequestBody @Valid User user, Errors errors) {
+
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = userservises.addUser(user);
+        if (!ischeck) {
+            return ResponseEntity.status(500).body(new RequestApi("Error adding a User", 500));
+
+        }
+        return ResponseEntity.status(200).body(new RequestApi("New User added", 200));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity update(@PathVariable int id, @RequestBody User user ,Errors errors) {
+        if (errors.hasErrors()) {
+            return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+        }
+        boolean ischeck = userservises.updateUser(id,user);
+        if (!ischeck) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+        }
+        return ResponseEntity.status(201).body(new RequestApi("update Usert", 200));
+
+    }
+    //delet
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RequestApi> delete(@PathVariable Integer id) {
+  boolean ischeck=userservises.dUser(id);
+   if(!ischeck) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RequestApi("invalid id", 400));
+}
+        return ResponseEntity.status(201).body(new RequestApi("delete User", 200));
+
+}
+
+}
+
+///
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.*;
+
+@Data @AllArgsConstructor
+public class User {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="username: must not be empty" )@Size(min = 5,message ="have to be 5 character long" )
+    private  String username;
+    @NotEmpty(message ="password: must not be empty" )@Size(min = 6,message ="have to be 6 character long" )
+    private  String password;
+    @NotEmpty(message ="email: must not be empty" )@Email
+    private  String email;
+    @NotEmpty(message ="role: must not be empty" ) @Pattern(regexp = ("Admin|Customer"))
+    private  String role;
+    @NotNull(message = "balance:must not be empty")@Positive
+    private  double  balance;
+
+}
+
+
+
+
+
+//////
+
+
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Product;
+import com.example.exesrsies.model.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Userservises {
+    private ArrayList<User> users = new ArrayList();
+
+
+    //get
+    public ArrayList<User> getUser() {
+
+        return users;
+    }
+
+    //add
+    public boolean addUser(User user) {
+
+        return users.add(user);
+    }
+
+    //update
+    public boolean updateUser(int index, User user) {
+       users.set(index, user);
+        return true;
+    }
+
+    //deleat
+    public boolean dUser(int index) {
+        users.remove(index);
+        return true;
+
+    }
+    public User getUser(String userid){
+        for (User user:users) {
+            if(user.getId().equals(userid))
+                return user;
+        }
+        return null;
+    }
+}//end class
+
+
+/////
+
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Comment;
+import com.example.exesrsies.servises.Cartservises;
+import com.example.exesrsies.servises.Commentservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/comment")
+@RequiredArgsConstructor
+public class Commentcontrooller {
+    private final Commentservises commentservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<Comment>> getComment() {
+
+        return ResponseEntity.status(200).body(commentservises.getComments());
+
+    }
+
+
+}
+
+
+/////
+
+
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.*;
+
+@Data @AllArgsConstructor
+public class Comment {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message =" userid: must not be empty" )@Size(min = 5,message ="have to be 5 character long" )
+    private  String  userid;
+    @NotEmpty(message ="message: must not be empty" )@Size(min = 6,message ="have to be 6 character long" )
+    private  String message;
+    @NotNull(message = "rate must not be empty")@Size(min = 1,max = 5,message = "must be a number between 1 - 5")
+    private  double  rate;
+
+}
+
+
+/////
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Comment;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class Commentservises {
+    private ArrayList<Comment> comments = new ArrayList();
+
+
+    //get
+    public ArrayList<Comment> getComments() {
+
+        return comments;
+    }
+
+    //add
+
+}//end class
+//////
+
+package com.example.exesrsies.controoller;
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Merchant;
+import com.example.exesrsies.model.PurchaseHistory;
+import com.example.exesrsies.model.RequestApi;
+import com.example.exesrsies.servises.Cartservises;
+import com.example.exesrsies.servises.PurchaseHistoryservises;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/purchantstock")
+@RequiredArgsConstructor
+public class PurchantStockcontrooller {
+    private final PurchaseHistoryservises purchaseHistoryservises;
+
+    //get
+    @GetMapping
+    public ResponseEntity<ArrayList<PurchaseHistory>> getPurchaseHistory() {
+
+        return ResponseEntity.status(200).body(purchaseHistoryservises.getPurchaseHistories());
+
+    }
+@PostMapping
+public ResponseEntity<RequestApi> addPurchaseHistory(@RequestBody @Valid PurchaseHistory purchaseHistory, Errors errors) {
+
+    if (errors.hasErrors()) {
+        return ResponseEntity.status(400).body(new RequestApi(errors.getFieldError().getDefaultMessage(), 400));
+    }
+    boolean ischeck = purchaseHistoryservises.addPurchaseHistory(purchaseHistory);
+    if (!ischeck) {
+        return ResponseEntity.status(500).body(new RequestApi("Error adding aPurchaseHistory", 500));
+
+    }
+    return ResponseEntity.status(200).body(new RequestApi("New PurchaseHistory added", 200));
+}
+
+}
+
+
+/////
+
+
+package com.example.exesrsies.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
+
+@Data @AllArgsConstructor
+public class PurchaseHistory {
+    @NotEmpty(message ="id : must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String id;
+    @NotEmpty(message ="userid: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private  String userid;
+    @NotEmpty(message ="productid: must not be empty" )@Size(min = 3,message ="have to be 3 character long" )
+    private String productid;
+    @NotNull(message = "price:must not be empty")@Positive
+    private double price;
+
+
+
+}
+
+/////
+package com.example.exesrsies.servises;
+
+
+import com.example.exesrsies.model.Cart;
+import com.example.exesrsies.model.Merchant;
+import com.example.exesrsies.model.PurchaseHistory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+
+@Service
+@RequiredArgsConstructor
+public class PurchaseHistoryservises {
+    private ArrayList<PurchaseHistory> purchaseHistories = new ArrayList();
+
+
+    //get
+    public ArrayList<PurchaseHistory> getPurchaseHistories() {
+
+        return purchaseHistories;
+    }
+    public boolean addPurchaseHistory(PurchaseHistory purchaseHistory) {
+
+        return purchaseHistories.add(purchaseHistory);
+    }
+
+    //add
+
+}//end class
+
+
+
